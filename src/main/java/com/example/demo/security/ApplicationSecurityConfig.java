@@ -1,26 +1,31 @@
 package com.example.demo.security;
 
-import static com.example.demo.security.Permission.*;
 import static com.example.demo.security.Role.*;
 
+import com.example.demo.auth.AppUserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
+    private final AppUserService appUserService;
+    private final PasswordEncoder passwordEncoder;
 
+    @Autowired
+    public ApplicationSecurityConfig(AppUserService appUserService, PasswordEncoder passwordEncoder) {
+        this.appUserService = appUserService;
+        this.passwordEncoder = passwordEncoder;
+    }
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
@@ -51,39 +56,16 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
 	        	.logoutSuccessUrl("/login");
     }
 
+    @Bean
+    public DaoAuthenticationProvider daoAuthenticationProvider(){
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setPasswordEncoder(passwordEncoder);
+        provider.setUserDetailsService(appUserService);
+        return provider;
+    }
+
     @Override
-    @Bean
-    public UserDetailsService userDetailsService() {
-        UserDetails annsSmithUser = User.builder()
-            .username("a")
-            .password(passwordEncoder().encode("p"))
-            // .roles(STUDENT.name())
-            .authorities(STUDENT.getGrantedAuthorities())
-            .build();
-
-        UserDetails linda = User.builder()
-            .username("l")
-            .password(passwordEncoder().encode("p"))
-            // .roles(ADMIN.name())
-            .authorities(ADMIN.getGrantedAuthorities())
-            .build();
-
-        UserDetails tom = User.builder()
-            .username("t")
-            .password(passwordEncoder().encode("p"))
-            // .roles(ADMINTRAINEE.name())
-            .authorities(ADMINTRAINEE.getGrantedAuthorities())
-            .build();
-
-        return new InMemoryUserDetailsManager(
-            annsSmithUser, linda, tom
-        );
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.authenticationProvider(daoAuthenticationProvider());
     }
-
-
-    @Bean
-    public PasswordEncoder passwordEncoder(){
-        return new BCryptPasswordEncoder(10);
-    }
-    
 }
