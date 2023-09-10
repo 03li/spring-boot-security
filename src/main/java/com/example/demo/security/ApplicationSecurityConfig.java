@@ -34,7 +34,21 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
 //            .antMatchers(HttpMethod.GET,"/management/**").hasAnyRole(ADMIN.name(),ADMINTRAINEE.name())
             .anyRequest().authenticated()
             .and()
-            .httpBasic();
+            .formLogin()
+	            .loginPage("/login").permitAll()
+	            .defaultSuccessUrl("/courses",true)
+                .passwordParameter("password")
+                .usernameParameter("username")
+	        .and()
+	        .rememberMe()
+                .rememberMeParameter("remember-me")
+	        .and()
+	        .logout()
+	        	.logoutUrl("/logout")
+	        	.clearAuthentication(true)
+	        	.invalidateHttpSession(true)
+	        	.deleteCookies("JSESSIONID","remember-me")
+	        	.logoutSuccessUrl("/login");
     }
 
     @Override
