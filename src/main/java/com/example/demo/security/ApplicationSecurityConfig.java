@@ -3,6 +3,9 @@ package com.example.demo.security;
 import static com.example.demo.security.Role.*;
 
 import com.example.demo.auth.AppUserService;
+import com.example.demo.jwt.JwtAuthFilter;
+import com.example.demo.jwt.JwtTokenVerifier;
+import com.example.demo.jwt.UsernamePasswordRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,6 +15,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
@@ -30,30 +34,14 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter{
     protected void configure(HttpSecurity http) throws Exception {
         http
             .csrf().disable()
+            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            .and()
+            .addFilter(new JwtAuthFilter(authenticationManager()))
+            .addFilterAfter(new JwtTokenVerifier(), JwtAuthFilter.class)
             .authorizeRequests()
             .antMatchers("/","/index","/favicon.ico").permitAll()
             .antMatchers("/api/**").hasRole(STUDENT.name())
-//            .antMatchers(HttpMethod.DELETE,"/management/**").hasAuthority(COURSE_WRITE.getPermission())
-//            .antMatchers(HttpMethod.PUT,"/management/**").hasAuthority(COURSE_WRITE.getPermission())
-//            .antMatchers(HttpMethod.POST,"/management/**").hasAuthority(COURSE_WRITE.getPermission())
-//            .antMatchers(HttpMethod.GET,"/management/**").hasAnyRole(ADMIN.name(),ADMINTRAINEE.name())
-            .anyRequest().authenticated()
-            .and()
-            .formLogin()
-	            .loginPage("/login").permitAll()
-	            .defaultSuccessUrl("/courses",true)
-                .passwordParameter("password")
-                .usernameParameter("username")
-	        .and()
-	        .rememberMe()
-                .rememberMeParameter("remember-me")
-	        .and()
-	        .logout()
-	        	.logoutUrl("/logout")
-	        	.clearAuthentication(true)
-	        	.invalidateHttpSession(true)
-	        	.deleteCookies("JSESSIONID","remember-me")
-	        	.logoutSuccessUrl("/login");
+            .anyRequest().authenticated();
     }
 
     @Bean
